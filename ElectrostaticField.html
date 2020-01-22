@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<head>
+    <title>Электростатическое поле</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<!-- <link rel="stylesheet" type="text/css" href="style.css"> -->
+	<!-- <script src="script.js"></script> -->
+</head>
+<style>
+body {
+	margin: 10px;
+}
+#wrapper{
+	height: 600px;
+    width: 1000px;
+    margin: 0px auto;
+    background: #ffffff;
+    border: 2px solid #808080;
+    border-radius: 5px;
+    padding: 10px;
+	box-sizing: border-box;
+	position: relative;
+}
+
+#maintitle{
+	text-align: center;
+	position:relative;
+	margin: 0px;
+}
+
+#WorkingFild{
+	position: absolute;
+	bottom: 20px;
+	left: 10px;
+}
+.SupportField{
+	position: absolute;
+	bottom: 48px;
+	left: 45px;
+}
+
+#info{
+	width: 300px;
+	height: 500px;
+	float: right;
+	box-sizing: border-box;
+	padding: 10px;
+	text-align: center;
+}
+.BlockTitle{
+	margin: 8px 0px;
+	font-size: 18px;
+	font-weight: bold;
+}
+.infoblocks{
+	margin: 0px 0px 20px 0px;
+	position: relative;
+}
+
+#voltmeter{
+	width: 200px;
+    height: 36px;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+	outline: none;
+	border: 1px solid #656565;
+	border-radius: 5px;
+	background: #fff;
+}
+#voltmetercoords{
+	padding: 5px;
+}
+.rangecharge{
+	outline: none;
+	padding: 0px;
+}
+.rangevalue{
+	line-height: 10px;
+}
+.opt{
+	width: 200px;
+    margin: 2px auto;
+    padding: 3px;
+    border: 1px solid #656565;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn{
+	width: 60px;
+	height: 20px;
+	cursor: pointer;
+	border: 1px solid #656565;
+	background: #e9e9e9;
+	border-radius: 3px;
+	outline: none;
+	margin-top: 5px;
+}
+.btn:hover{
+	border: 1px solid #575757;
+	background: #ededed;
+	color: #575757;
+}
+</style>
+
+<script>
+//Functions
+//Create field
+function createfild(){
+	var canvas = document.getElementById("WorkingFild");
+	var context = canvas.getContext("2d");
+//Grid
+	context.beginPath();
+	context.strokeStyle = "#DDD";
+	context.lineWidth = 1;
+	for (i = 0; i < 17; i++){
+		context.moveTo(30, 30*i + 12);
+		context.lineTo(635, 30*i + 12);
+	}
+	for (i = 1; i < 22; i++){
+		context.moveTo(30*i + 5, 12);
+		context.lineTo(30*i + 5, 497);
+	}
+	context.stroke();			
+//Axis signatures
+	context.font = 'bold 16px "Tahoma"';
+	context.fillStyle = "#606060";
+	//OX
+	for (i = 16; i >= 0; i--){
+		if (Math.floor(i/10) == 0){
+			context.fillText(i, 14, 498 - 30 * i);	
+		}
+		else{
+			context.fillText(i, 5, 498 - 30 * i);	
+		}
+	}	
+	//OY
+	for (i = 20; i >= 0; i--){
+		if (Math.floor(i/10) == 0){
+			context.fillText(i, 30 * i + 30, 515);	
+		}
+		else{
+			context.fillText(i, 30 * i + 25, 515);		
+		}			
+	}	
+//Border
+	context.beginPath();
+	context.strokeStyle = "#000";
+	context.lineWidth = 1;	
+	context.moveTo(35, 12);
+	context.lineTo(635, 12);
+	context.lineTo(635, 492);
+	context.lineTo(35, 492);
+	context.lineTo(35, 12);
+	context.stroke();	
+}		
+//Create point and line charges
+function addpointcharge(x, y, charge){
+	var canvas = document.getElementById("Charges");
+	var context = canvas.getContext("2d");
+	context.lineWidth = 1;
+	context.beginPath();
+	if (charge) {
+		context.fillStyle = "Red"
+		context.strokeStyle = "Red"
+	}
+	else {
+		context.fillStyle = "Blue";
+		context.strokeStyle = "Blue"
+	}
+	context.arc(x, y, 30, 0, 2 * Math.PI, true);
+	context.fill();
+	context.stroke();
+	
+	context.strokeStyle = "#FFF";
+	context.lineWidth = 7;
+	context.beginPath();
+	context.moveTo(x-20, y);
+	context.lineTo(x+20, y);
+	if (charge) {
+		context.moveTo(x, y+20);
+		context.lineTo(x, y-20);
+	}
+	context.stroke();	
+}
+function addlinecharge(x, charge){
+	var canvas = document.getElementById("Charges");
+	var context = canvas.getContext("2d");
+	context.lineWidth = 5;
+	if (charge) context.strokeStyle = "Red"
+	else context.strokeStyle = "Blue";
+	context.beginPath();
+	context.moveTo(x, 0);
+	context.lineTo(x, 480);
+	context.stroke();
+}
+
+//Working modes
+function pointpoint(charge1, charge2){
+	if (charge1 != 0){
+		if (charge1 > 0){
+			addpointcharge(60, 240, 1);	
+		}else{
+			addpointcharge(60, 240, 0);	
+		}
+	}
+	if (charge2 != 0){
+		if (charge2 > 0){
+			addpointcharge(540, 240, 1);	
+		}else{
+			addpointcharge(540, 240, 0);	
+		}
+	};	
+}
+function plateplate(charge1, charge2){
+	if (charge1 != 0){
+		if (charge1 > 0){
+			addlinecharge(0, 1);	
+		}else{
+			addlinecharge(0, 0);	
+		}
+	}
+	if (charge2 != 0){
+		if (charge2 > 0){
+			addlinecharge(600, 1);	
+		}else{
+			addlinecharge(600, 0);
+		}
+	};	
+}
+function platepoint(charge1, charge2){
+	if (charge1 != 0){
+		if (charge1 > 0){
+			addpointcharge(60, 240, 1);	
+		}else{
+			addpointcharge(60, 240, 0);	
+		}
+	}
+	if (charge2 != 0){
+		if (charge2 > 0){
+			addlinecharge(600, 1);	
+		}else{
+			addlinecharge(600, 0);
+		}
+	};	
+}
+//Start
+function vddlines(x, y, q1, q2, sign){
+	var k = 9;
+	var x1 = 60, y1 = 240, x2 = 540, y2 = 240;
+	var r1 = Math.sqrt(Math.pow((x - x1), 2)+(Math.pow((y - y1), 2))) / 30;
+	var r2 = Math.sqrt(Math.pow((x - x2), 2)+(Math.pow((y - y2), 2))) / 30;
+	var E1 = k * q1 / Math.pow(r1, 2);
+	var E2 = k * q2 / Math.pow(r2, 2);
+	var v1x1 = 0, v1y1 = 0, v2x1 = 0, v2y1 = 0;
+	var v1x = Math.round((x-x1)/3)/10;
+	var v1y = Math.round((y-y1)/3)/10;
+	var t1 = Math.sqrt(Math.pow(v1x, 2) + Math.pow(v1y, 2));
+	var v1x1 = E1 * v1x / t1;
+	var v1y1 = E1 * v1y / t1;
+	var v2x = Math.round((x-x2)/3)/10;
+	var v2y = Math.round((y-y2)/3)/10;
+	var t2 = Math.sqrt(Math.pow(v2x, 2) + Math.pow(v2y, 2));
+	var v2x1 = E2 * v2x / t2;
+	var v2y1 = E2 * v2y / t2;
+	var E = Math.sqrt(Math.pow(v1x1 + v2x1, 2) + Math.pow(v1y1 + v2y1, 2));	
+	var vx = (v1x1 + v2x1) / E;
+	var vy = (v1y1 + v2y1) / E;
+	var canvas = document.getElementById("Voltage");
+	var context = canvas.getContext("2d");
+	context.lineWidth = 1;
+	context.strokeStyle = "#ff2020";
+	if (sign == "+"){	
+		var ldx = x + vx;
+		var ldy = y + vy;
+	}else{
+		var ldx = x - vx;
+		var ldy = y - vy;	
+	}
+	context.beginPath();
+	context.moveTo(x, y);
+	context.lineTo(ldx, ldy);
+	context.stroke();
+	var retarr = [ ldx, ldy ];	
+	return retarr;
+}
+function vdllines(x, y, q1, q2, sign){
+	var k = 9;
+	var e = 8.85;
+	var x1 = 60, y1 = 240, x2 = 600, y2 = 240;
+	var r1 = Math.sqrt(Math.pow((x - x1), 2)+(Math.pow((y - y1), 2))) / 30;
+	var r2 = x2 - x;
+	var E1 = k * q1 / Math.pow(r1, 2);
+	var E2 = q2 / (2 * e);
+	var v1x1 = 0, v1y1 = 0;
+	var v1x = Math.round((x-x1)/3)/10;
+	var v1y = Math.round((y-y1)/3)/10;
+	var t1 = Math.sqrt(Math.pow(v1x, 2) + Math.pow(v1y, 2));
+	var v1x1 = E1 * v1x / t1;
+	var v1y1 = E1 * v1y / t1;
+	var E = Math.sqrt(Math.pow(v1x1 - E2, 2) + Math.pow(v1y1, 2));
+	var vx = (v1x1 - E2) / E;
+	var vy = (v1y1) / E;
+	var canvas = document.getElementById("Voltage");
+	var context = canvas.getContext("2d");
+	context.lineWidth = 1;
+	context.strokeStyle = "#ff2020";
+	if (sign == "+"){	
+		var ldx = x + vx;
+		var ldy = y + vy;
+	}else{
+		var ldx = x - vx;
+		var ldy = y - vy;	
+	}
+	context.beginPath();
+	context.moveTo(x, y);
+	context.lineTo(ldx, ldy);
+	context.stroke();
+	var retarr = [ ldx, ldy ];
+	return retarr;
+}
+function makestarpoints(q, xoy){
+	var startx = [];
+	var starty = [];
+	var r = 30;
+	var rad;
+	switch(q) {
+		case 1: 
+			for (i = 15; i < 360; i += 30){
+				rad = i * Math.PI / 180;
+				startx.push(Math.round(r * Math.cos(i * Math.PI / 180)));
+				starty.push(Math.round(r * Math.sin(i * Math.PI / 180)));
+			}
+		break;
+		case 2: 
+			for (i = 12; i < 360; i += 24){
+				rad = i * Math.PI / 180;
+				startx.push(Math.round(r * Math.cos(rad)));
+				starty.push(Math.round(r * Math.sin(rad)));
+			}
+		break;
+		case 3: 
+			for (i = 9; i < 360; i += 18){
+				rad = i * Math.PI / 180;
+				startx.push(Math.round(r * Math.cos(rad)));
+				starty.push(Math.round(r * Math.sin(rad)));
+			}		
+		break;
+		case 4: 
+			for (i = 6; i < 360; i += 12){
+				rad = i * Math.PI / 180;
+				startx.push(Math.round(r * Math.cos(rad)));
+				starty.push(Math.round(r * Math.sin(rad)));
+			}		
+		break;
+		case 5: 
+			for (i = 3; i < 360; i += 6){
+				rad = i * Math.PI / 180;
+				startx.push(Math.round(r * Math.cos(rad)));
+				starty.push(Math.round(r * Math.sin(rad)));
+			}			
+		break;
+		default:		
+		break;
+	}
+	if (xoy == 1){
+		return startx;
+	}
+	else{
+		return starty;
+	}
+}
+function voltagelines(){
+	var sx1 = 60, sx2 = 540, sy = 240;
+	var q1 = document.getElementById("charge1").value;
+	var q2 = document.getElementById("charge2").value;
+	var option = document.getElementById("option").value;
+	var sign;
+	var canvas = document.getElementById("Voltage");
+	var context = canvas.getContext("2d");
+	//Point-Point
+	if (option == "1"){
+		if (Math.abs(q1) >= Math.abs(q2)){
+			var startx = makestarpoints(Math.abs(q1), 1);
+			var starty = makestarpoints(Math.abs(q1), 0);
+			if (q1 > 0) { sign = "+" }
+			else { sign = "-" }
+			var mensh = [];
+			for (j = 0; j < startx.length; j++){		
+				var retarr = [ startx[j] + sx1, starty[j] + sy ];
+				for (i=0; i < 1000; i++){
+					var x1 = retarr[0];
+					var y1 = retarr[1];
+					retarr = vddlines(x1, y1, q1, q2, sign); 
+					if ((Math.sqrt(Math.pow(x1-sx2, 2) + Math.pow(y1-sy, 2)) < 30) && (q2 != 0)) {
+						mensh.push(retarr);
+					}
+					if ((x1 < -100) || (x1 > 700) || (y1 < -100) || (y1 > 580) || ((Math.sqrt(Math.pow(x1-sx2, 2) + Math.pow(y1-sy, 2)) < 30) && (q2 != 0))) break;
+				}
+			}
+			var startx = makestarpoints(Math.abs(q2), 1);
+			var starty = makestarpoints(Math.abs(q2), 0);
+			if (q2 > 0) { sign = "+" }
+			else { sign = "-" }
+			for (j = 0; j < startx.length; j++){
+				var retarr = [ -startx[j] + sx2, -starty[j] + sy ];	
+				var er = false;
+				for (i = 0; i < mensh.length; i++){
+					var dist = (Math.sqrt(Math.pow(mensh[i][0]-retarr[0], 2) + Math.pow(mensh[i][1]-retarr[1], 2)));
+					if (dist <= Math.abs(10 / q2)) {
+						er = true;
+						break;
+					}
+				}
+				for (i = 0; (i < 1000) && (er == false); i++){	
+					var x1 = retarr[0];
+					var y1 = retarr[1];
+					retarr = vddlines(x1, y1, q1, q2, sign); 
+					if ((x1 < -100) || (x1 > 700) || (y1 < -100) || (y1 > 580) || ((Math.sqrt(Math.pow(x1-sx1, 2) + Math.pow(y1-sy, 2)) < 30) && (q1 != 0))) break;		
+				}
+			}
+		}
+		else{	
+			var startx = makestarpoints(Math.abs(q2), 1);
+			var starty = makestarpoints(Math.abs(q2), 0);
+			if (q2 > 0) { sign = "+" }
+			else { sign = "-" }
+			var mensh = [];
+			for (j = 0; j < startx.length; j++){
+				var retarr = [ -startx[j] + sx2, -starty[j] + sy ];			
+				for (i=0; i < 1000; i++){	
+					var x1 = retarr[0];
+					var y1 = retarr[1];
+					retarr = vddlines(x1, y1, q1, q2, sign); 
+					if ((Math.sqrt(Math.pow(x1-sx1, 2) + Math.pow(y1-sy, 2)) < 30) && (q1 != 0)) {
+						mensh.push(retarr);
+					}
+					if ((x1 < -100) || (x1 > 700) || (y1 < -100) || (y1 > 580) || ((Math.sqrt(Math.pow(x1-sx1, 2) + Math.pow(y1-sy, 2)) < 30) && (q1 != 0))) break;		
+				}
+			}
+			var startx = makestarpoints(Math.abs(q1), 1);
+			var starty = makestarpoints(Math.abs(q1), 0);
+			if (q1 > 0) { sign = "+" }
+			else { sign = "-" }		
+			for (j = 0; j < startx.length; j++){		
+				var retarr = [ startx[j] + sx1, starty[j] + sy ];
+				var er = false;
+				for (i = 0; i < mensh.length; i++){
+					var dist = (Math.sqrt(Math.pow(mensh[i][0]-retarr[0], 2) + Math.pow(mensh[i][1]-retarr[1], 2)));
+					if (dist <= Math.abs(10 / q1)) {
+						er = true;
+						break;
+					}
+				}
+				for (i = 0; (i < 1000) && (er == false); i++){
+					var x1 = retarr[0];
+					var y1 = retarr[1];
+					retarr = vddlines(x1, y1, q1, q2, sign); 
+					if ((x1 < -100) || (x1 > 700) || (y1 < -100) || (y1 > 580) || ((Math.sqrt(Math.pow(x1-sx2, 2) + Math.pow(y1-sy, 2)) < 30) && (q2 != 0))) break;
+				}
+			}
+		}
+	}
+	//Plate-Plate
+	if (option == "2"){
+		if (q1 != q2){
+			var canvas = document.getElementById("Voltage");
+			var context = canvas.getContext("2d");
+			context.lineWidth = 1;
+			context.strokeStyle = "Red";
+			var power = Math.log(Math.abs(q1 - q2) + 1);
+			var ly = 0;
+			for (i = 0; ly < 240; i++){		
+				ly = ly + 50 / power;
+				if (i == 0) ly = 25 / power;
+				context.beginPath();
+				context.moveTo(0, 240 - ly);
+				context.lineTo(600, 240 - ly);
+				context.stroke();
+				context.beginPath();
+				context.moveTo(0, 240 + ly);
+				context.lineTo(600, 240 + ly);
+				context.stroke();
+			}
+		}
+	}
+	//Point-Plate
+	if (option == "3"){
+		var mensh = [];
+		if ((q2 != 0) && ((Math.abs(q1) <= Math.abs(q2)) || (q1 <= 0 && q2 <= 0) || (q1 > 0 && q2 > 0))){
+			if (q2 > 0) { sign = "+" }
+			else { sign = "-" }
+			var power = Math.abs(q2);
+			var ly = 0;
+			for (j = 0; ly < 240; j++){							
+				ly = ly + 100 / power;
+				if (j == 0) ly = 50 / power;
+				var retarr = [ 600, 240 - ly ];
+				for (i=0; i < 1000; i++){
+					var x1 = retarr[0];
+					var y1 = retarr[1];
+					retarr = vdllines(x1, y1, q1, q2, sign); 
+					if ((Math.sqrt(Math.pow(x1-sx1, 2) + Math.pow(y1-sy, 2)) < 30) && (q1 != 0)) {
+						mensh.push(retarr);
+					}
+					if ((x1 < -100) || (x1 > 700) || (y1 < -100) || (y1 > 580) || (Math.sqrt(Math.pow(x1-sx1, 2) + Math.pow(y1-sy, 2)) < 30) && (q1 != 0)) break;
+				}
+				var retarr = [ 600, 240 + ly ];
+				for (i=0; i < 1000; i++){
+					var x1 = retarr[0];
+					var y1 = retarr[1];
+					retarr = vdllines(x1, y1, q1, q2, sign); 
+					if ((Math.sqrt(Math.pow(x1-sx1, 2) + Math.pow(y1-sy, 2)) < 30) && (q1 != 0)) {
+						mensh.push(retarr);
+					}
+					if ((x1 < -100) || (x1 > 700) || (y1 < -100) || (y1 > 580) || (Math.sqrt(Math.pow(x1-sx1, 2) + Math.pow(y1-sy, 2)) < 30) && (q1 != 0)) break;
+				}
+			}	
+		}
+		if (q1 != 0){
+			var startx = makestarpoints(Math.abs(q1), 1);
+			var starty = makestarpoints(Math.abs(q1), 0);
+			if (q1 > 0) { sign = "+" }
+			else { sign = "-" }
+			for (j = 0; j < startx.length; j++){		
+				var retarr = [ startx[j] + sx1, starty[j] + sy ];
+				var er = false;
+				for (i = 0; i < mensh.length; i++){
+					var dist = (Math.sqrt(Math.pow(mensh[i][0]-retarr[0], 2) + Math.pow(mensh[i][1]-retarr[1], 2)));				
+					var maxdist;
+					if (Math.abs(q1) <= Math.abs(q2)) { maxdist = (Math.abs(5 / q1) + Math.abs(5 / q2)); }
+					else { maxdist = Math.abs(q2) / 5 }
+					if (dist <= maxdist) {
+						er = true;
+						break;
+					}
+				}
+				for (i=0; (i < 1000) && (er == false); i++){
+					var x1 = retarr[0];
+					var y1 = retarr[1];
+					retarr = vdllines(x1, y1, q1, q2, sign); 
+					if ((x1 < -100) || (x1 > 700) || (y1 < -100) || (y1 > 580)) break;
+				}
+			}	
+		}
+		
+	}
+}
+function start(){	
+	createfild();
+	document.getElementById("Lines").style.visibility = 'hidden';
+	document.getElementById("EditableField").addEventListener("mousedown", function(e){ 
+		;
+		if ((event.which == 1) && (document.getElementById("resetbtn").innerHTML == "Вкл")){
+			var context = document.getElementById("EditableField").getContext("2d");
+			x = e.pageX - document.getElementById("EditableField").offsetLeft - document.getElementById("wrapper").offsetLeft - 2;
+			y = e.pageY + document.getElementById("EditableField").offsetTop - document.getElementById("wrapper").offsetTop - 137;
+			context.beginPath();
+			context.strokeStyle = "#404040";
+			context.arc(x, y, 3, 0,  2*Math.PI, true);
+			context.fillStyle = "#404040";
+			context.fill();
+			context.stroke();
+			}		
+    });				
+	document.getElementById("EditableField").onmousemove = function (e) {
+		var x = e.pageX - document.getElementById("EditableField").offsetLeft - document.getElementById("wrapper").offsetLeft - 2; 
+		var y = 480 - e.pageY + document.getElementById("EditableField").offsetTop - document.getElementById("wrapper").offsetTop + 17;	
+		var q1 = document.getElementById("charge1").value;
+		var q2 = document.getElementById("charge2").value;
+		var n, E;
+		var option = document.getElementById("option").value;
+		if (option == "1"){
+			n = potdd(q1, q2, x, y);
+			E = tensdd(q1, q2, x, y);
+		}else{
+			if (option == "2"){
+				n = potll(q1, q2, x, y);
+				E = tensll(q1, q2);
+			}else{
+				n = potdl(q1, q2, x, y);
+				E = tensdl(q1, q2, x, y);
+			}
+		}		
+		document.getElementById("coords").innerHTML = "(" + Math.round(x/3)/10 + ", " + Math.round(y/3)/10 + ")"; 
+		if ((!isNaN(n)) && (isFinite(n))) document.getElementById("voltmeter").value = Math.round(n * 10) / 10;
+		if ((!isNaN(E)) && (isFinite(E))) document.getElementById("tensionsins").innerHTML = Math.round(E * 10) / 10;
+	};	
+}
+function options(opt){
+	document.getElementById("opt1").style.backgroundColor = "#FFF";
+	document.getElementById("opt2").style.backgroundColor = "#FFF";
+	document.getElementById("opt3").style.backgroundColor = "#FFF";
+	document.getElementById("opt"+opt).style.backgroundColor = "#DDD";
+	switch (opt) {
+		case 1:
+			document.getElementById("range1units").innerHTML = "нКл";
+			document.getElementById("range2units").innerHTML = "нКл";		
+			break;
+		case 2:
+			document.getElementById("range1units").innerHTML = "пКл/м<sup>2</sup>";
+			document.getElementById("range2units").innerHTML = "пКл/м<sup>2</sup>";
+			break;
+		case 3:
+			document.getElementById("range1units").innerHTML = "нКл";
+			document.getElementById("range2units").innerHTML = "пКл/м<sup>2</sup>";
+			break;
+		default:
+			break;
+	}
+	document.getElementById("option").value = opt;
+	document.getElementById("voltmeter").value = 0;
+	document.getElementById("tensionsins").innerHTML = 0;
+	document.getElementById("coords").innerHTML = "(0, 0)"; 
+	document.getElementById("Lines").getContext("2d").clearRect(0, 0, 600, 480);
+	document.getElementById("Charges").getContext("2d").clearRect(0, 0, 600, 480);
+	document.getElementById("EditableField").getContext("2d").clearRect(0, 0, 600, 480);
+	document.getElementById("charge1").value = 0;
+	document.getElementById("charge2").value = 0;
+	document.getElementById("range1value").innerHTML = 0;
+	document.getElementById("range2value").innerHTML = 0;
+	document.getElementById("Voltage").getContext("2d").clearRect(0, 0, 600, 480);
+}
+//Calculations
+//Point - Point
+function potdd(q1, q2, x, y){
+	var k = 9;//9·10^9 В·м/Кл;
+	var x1 = 60, y1 = 240, x2 = 540, y2 = 240;
+	var r1 = Math.sqrt(Math.pow((x - x1), 2)+(Math.pow((y - y1), 2))) / 30;
+	var r2 = Math.sqrt(Math.pow((x - x2), 2)+(Math.pow((y - y2), 2))) / 30;
+	var n = k * (q1/r1 + q2/r2);
+	return n;
+}
+function tensdd(q1, q2, x, y){
+	var k = 9;
+	var x1 = 60, y1 = 240, x2 = 540, y2 = 240;
+	var r1 = Math.sqrt(Math.pow((x - x1), 2)+(Math.pow((y - y1), 2))) / 30;
+	var r2 = Math.sqrt(Math.pow((x - x2), 2)+(Math.pow((y - y2), 2))) / 30;
+	var E1 = k * q1 / Math.pow(r1, 2);
+	var E2 = k * q2 / Math.pow(r2, 2);
+	var v1x1 = 0, v1y1 = 0, v2x1 = 0, v2y1 = 0;
+	var v1x = Math.round((x-x1)/3)/10;
+	var v1y = Math.round((y-y1)/3)/10;
+	var t1 = Math.sqrt(Math.pow(v1x, 2) + Math.pow(v1y, 2));
+	var v1x1 = E1 * v1x / t1;
+	var v1y1 = E1 * v1y / t1;
+	var v2x = Math.round((x-x2)/3)/10;
+	var v2y = Math.round((y-y2)/3)/10;
+	var t2 = Math.sqrt(Math.pow(v2x, 2) + Math.pow(v2y, 2));
+	var v2x1 = E2 * v2x / t2;
+	var v2y1 = E2 * v2y / t2;
+	var E = Math.sqrt(Math.pow(v1x1 + v2x1, 2) + Math.pow(v1y1 + v2y1, 2));
+	return E;
+}
+//Plate - Plate
+function potll(q1, q2, x, y){
+	var e = 8.85;//8,85*10^(-12)
+	var E1 = (q1)/(2*e);
+	var E2 = (q2)/(2*e);
+	var x1 = 0;
+	var x2 = 600;
+	var n = - E1 * (Math.abs(x1-x) / 30) - E2 * (Math.abs(x2-x) / 30);
+	return n;
+}
+function tensll(q1, q2){
+	var e = 8.85;
+	var E1 = q1 / (2 * e);
+	var E2 = q2 / (2 * e);
+	var E = Math.abs(E1 - E2);
+	return E;
+}
+//Point - Plate
+function potdl(q1, q2, x, y){
+	var k = 9;
+	var x1 = 60; 
+	var y1 = 240;
+	var x2 = 600;
+	var e = 8.85;
+	var r1 = Math.sqrt(Math.pow((x - x1), 2)+(Math.pow((y - y1), 2))) / 30;
+	var E2 = (q2)/(2*e);
+	var n = k * (q1/r1) - E2 * (Math.abs(x2-x) / 30);
+	return n;
+}
+function tensdl(q1, q2, x, y){
+	var k = 9;
+	var e = 8.85;
+	var x1 = 60, y1 = 240, x2 = 600, y2 = 240;
+	var r1 = Math.sqrt(Math.pow((x - x1), 2)+(Math.pow((y - y1), 2))) / 30;
+	var r2 = x2 - x;
+	var E1 = k * q1 / Math.pow(r1, 2);
+	var E2 = q2 / (2 * e);
+	var v1x1 = 0, v1y1 = 0;
+	var v1x = Math.round((x-x1)/3)/10;
+	var v1y = Math.round((y-y1)/3)/10;
+	var t1 = Math.sqrt(Math.pow(v1x, 2) + Math.pow(v1y, 2));
+	var v1x1 = E1 * v1x / t1;
+	var v1y1 = E1 * v1y / t1;
+	var E = Math.sqrt(Math.pow(v1x1 - E2, 2) + Math.pow(v1y1, 2));
+	return E;
+}
+//Calculations
+function makedot(i, j, context){
+	context.beginPath();
+	context.moveTo(i, j);
+	context.lineTo(i, j+1);
+	context.stroke();
+}
+function calculate(){
+	var option = document.getElementById("option").value;
+	var canvas = document.getElementById("Lines");
+	var context = canvas.getContext("2d");
+	context.strokeStyle = "#000";
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	var q1 = document.getElementById("charge1").value;
+	var q2 = document.getElementById("charge2").value;	
+	document.getElementById("range1value").innerHTML = q1;
+	document.getElementById("range2value").innerHTML = q2;	
+	var n;
+	for (j = 0; j < 480; j++){
+		var begin = -1, min, imin;
+		for (i = 0; i < 600; i++){
+			if (option == "1"){
+				n = potdd(q1, q2, i, j);
+			}else{
+				if (option == "2"){
+					n = potll(q1, q2, i, j);
+				}else{
+					n = potdl(q1, q2, i, j);
+				}
+			}			
+			n = Math.round(n * 100);	
+			if ((!isNaN(n)) && (isFinite(n)) && (Math.abs(n % 100) <  2) && (i != 599)) {	
+				if (begin == -1){
+					begin = i;
+					min = Math.abs(n);
+					imin = i;
+				}else{
+					if (min > Math.abs(n)){
+						min = Math.abs(n);
+						imin = i;
+					}
+				}
+			}else{
+				if (begin != -1){
+					makedot(imin, j, context);
+					begin = -1;
+				}
+			}
+		}
+	}
+	charge1 = document.getElementById("charge1").value;
+	charge2 = document.getElementById("charge2").value;
+	var cnvs = document.getElementById("Charges");
+	var ctx = cnvs.getContext("2d");
+	ctx.clearRect(0, 0, 600, 480);
+	switch (option) {
+		case "1":
+			pointpoint(charge1, charge2);
+			break;
+		case "2":
+			plateplate(charge1, charge2);
+			break;
+		case "3":
+			platepoint(charge1, charge2);
+			break;
+		default:
+			break;
+	}
+	if (document.getElementById("voltonbtn").innerHTML  == 'Вкл') {	
+		document.getElementById("Voltage").getContext("2d").clearRect(0, 0, 600, 480);		
+		voltagelines();
+	}else{
+		document.getElementById("Voltage").getContext("2d").clearRect(0, 0, 600, 480);
+	}
+}	
+
+//Other
+function lineson(){
+	var lines = document.getElementById("Lines");
+	var btn = document.getElementById("linesonbtn");
+	if (lines.style.visibility == 'hidden' ) {		
+		lines.style.visibility = 'visible';	
+		btn.innerHTML = "Вкл";
+	}else{
+		lines.style.visibility = 'hidden';
+		btn.innerHTML = "Выкл";
+	}
+}
+function volton(){
+	var btn = document.getElementById("voltonbtn");
+	var area = document.getElementById("Voltage").getContext("2d");
+	if (btn.innerHTML == 'Вкл' ) {		
+		btn.innerHTML = "Выкл";
+		area.clearRect(0, 0, 600, 480);
+	}else{
+		btn.innerHTML = "Вкл";
+		area.clearRect(0, 0, 600, 480);
+		voltagelines();
+	}	
+}
+function resetuserpoints(){
+	var btn = document.getElementById("resetbtn");
+	var area = document.getElementById("EditableField").getContext("2d");
+	if (btn.innerHTML == 'Вкл' ) {		
+		btn.innerHTML = "Выкл";
+		area.clearRect(0, 0, 600, 480);
+	}else{
+		btn.innerHTML = "Вкл";
+		area.clearRect(0, 0, 600, 480);
+	}		
+}
+</script>
+
+<body onload="start()">
+	<div id="wrapper">	
+	<h1 id = "maintitle">Изучение электростатического поля</h1>
+		<canvas id='WorkingFild' width="650" height="520">Обновите браузер</canvas>
+		<canvas id='Voltage' class="SupportField" width="600" height="480">Обновите браузер</canvas>
+		<canvas id='Lines' class="SupportField" width="600" height="480">Обновите браузер</canvas>
+		<canvas id='Charges' class="SupportField" width="600" height="480">Обновите браузер</canvas>
+		<canvas id='EditableField' class="SupportField" width="600" height="480">Обновите браузер</canvas>
+		<div id="info">
+			<div id="voltmeterinfo" class="infoblocks">
+				<div class="BlockTitle">Показания вольтметра(В)</div>
+				<input type="text" id="voltmeter" disabled><br>
+				<div id="tensions">Напряженность: <span id="tensionsins">0</span> В/м</div>
+				<div id="voltmetercoords">Координаты: <span id="coords">(0, 0)</span> м</div>
+			</div>
+			<div id="optionsinfo" class="infoblocks">
+				<div class="BlockTitle">Варианты работы</div>
+				<div onclick = "options(1)" id="opt1" class="opt" style="background-color: #DDD;">Два точечных заряда</div>
+				<div onclick = "options(2)" id="opt2" class="opt">Две пластины</div>
+				<div onclick = "options(3)" id="opt3" class="opt">Пластина и точка</div>
+				<input type="hidden" id="option" value="1">
+			</div>
+			<div id="chargeinfo" class="infoblocks">
+				<div class="BlockTitle">Заряды</div>
+				<input type="range" min="-5" max="5" step="1" id="charge1" onchange="calculate()" value="0" class="rangecharge"><br>
+				<input type="range" min="-5" max="5" step="1" id="charge2" onchange="calculate()" value="0" class="rangecharge"><br>
+				1) <span id="range1value" class="rangevalue">0</span> <span id="range1units">нКл</span>
+				2) <span id="range2value" class="rangevalue">0</span> <span id="range2units">нКл</span>
+			</div>
+			<div id="additionalinfo" class="infoblocks">
+				<div class="BlockTitle">Дополнительно</div>
+				Силовые линии <button class="btn" id="voltonbtn" onclick="volton()">Выкл</button>
+				Эквипотенциали <button class="btn" id="linesonbtn" onclick="lineson()">Выкл</button>
+				Пользовательские метки <button class="btn" id="resetbtn" onclick="resetuserpoints()">Выкл</button>
+			</div>
+		</div>			
+	</div>
+	<span id="supinfo"></span>
+</body>
+</html>

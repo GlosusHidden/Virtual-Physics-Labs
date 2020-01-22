@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<!-- Version 1.3.1 06.06.18-->
+<head>
+    <title>Опыт Юнга</title>
+	<meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+	<!-- <link rel="stylesheet" type="text/css" href="style.css"> -->
+	<!-- <script src="script.js"></script> -->
+</head>
+<style>
+body {
+	margin: 10px;
+}
+#wrapper{
+	height: 600px;
+    width: 1000px;
+    margin: 0px auto;
+    background: #ececec;
+    border: 2px solid #808080;
+    border-radius: 5px;
+    padding: 10px;
+	box-sizing: border-box;
+	font-weight: bold;
+}
+
+#ModeSwitcher{
+	cursor: pointer;
+}
+
+#maintitle{
+	text-align: center;
+	margin: 0px;
+}
+#Demo{}
+
+#canvasArea{
+	position:relative;
+	height: 450px;
+	margin: 5px 10px;
+}
+#LabInfo{
+	position: relative;
+}
+#WorkingField{}
+#Screens{}
+#InterferScreen{
+	left: 866px;
+}
+#Axis{
+	border: 1px solid transparent;
+}
+.myCanvas{
+	border: 1px solid black;
+	position: absolute;
+	top: 10px;
+	left: 40px;
+}
+#info{
+	position:relative;
+}
+#settings2{
+	left: 35px;
+}
+#myButtons{
+	position: absolute;
+	left: 50px;
+	top: 0px;
+}
+.settingTable{
+	position: absolute;
+	top: 0px;
+    background: #a2a2a2;
+    padding: 5px;
+    border: 1px solid black;
+    border-radius: 5px;	
+}
+#settings1{
+	right: 50px;
+}
+.myRange{
+	-webkit-appearance: none;
+    width: 100px;
+    height: 10px;
+    outline : none;
+    border: 1px solid #D4D4D4;
+    background: #D4D4D4;
+    border-radius: 5px;
+    cursor: pointer;
+	padding: 0px;
+}
+.sspBtn{
+	border: 1px solid black;
+    border-radius: 5px;
+    padding: 5px 20px;
+    outline: none;
+    font-size: 18px;
+    margin-right: 25px;
+    background: none;
+	cursor: pointer;
+	background: #a2a2a2;
+}
+.sspBtn:hover{
+	background: #dedede;
+}
+
+
+#Lab{
+	display: none;
+}
+#LabCanvasArea{
+	position:relative;
+	height: 240px;
+	margin: 5px 10px;
+}
+.labCanvas{
+	position: absolute;
+	top: 50px;
+	left: 25px;
+}
+#LabAxis{}
+#LabShield{}
+</style>
+<script>
+//1px = 20 нм;
+
+//Mode
+var Mode = "Demo";
+
+//MainCanvas
+var MainCanvas = null;
+var MainCanvasCtx = null;
+var CanvasWidth = null;
+var CanvasHeight = null;
+//BufferCanvas
+var bufferCanvas = null;
+var bufferCanvasCtx = null;
+//PartitionCanvas
+var PartitionCanvas = null;
+var PartitionCanvasCtx = null;
+//AxisCanvas
+var AxisCanvas = null;
+var AxisCanvasCtx = null;
+//InterferCanvas
+var InterferCanvas = null;
+var InterferCanvasCtx = null;
+
+var waveSpeed = 2;
+var waveWidth = 5;
+var waveNeon = 5;
+var backgroundColor = "#1f1f1f";
+var screenBackground = "#000000"
+var screenColor = "#cbcbcb";
+
+var waveArray = [];
+var twoWaveArray = [];
+
+var RealColorsArray = [ "#800080", "#0000FF", "#87CEEB", "#008000", "#FFFF00", "#FFA500", "#FF0000" ];
+var ColorsArray = [ "#FF00FF", "#0000CD", "#00BFFF", "#00FF00", "#FFD700", "#FF4500", "#FF0000" ];
+var waveColor = null;
+var waveSize = null;
+var renderingWaveSize = null;
+var firstWaveStop = null;
+var secondWaveStop = null;
+var maxWaveSize = null;
+var ScreenDist = null;
+var ScreenHole = null;
+
+var partition = null;
+var cracks = null;
+
+var inProgress = false;
+var fastBuilds = false;
+var InterferDone = false;
+
+var timerRAF = null;
+
+//Labs screen
+var LabMainCanvas = null;
+var LabMainCanvasCtx = null;
+var LabAxisCanvas = null;
+var LabAxisCanvasCtx = null;
+
+var LabCanvasWidth = null;
+
+var LabWave = null;
+var LabDist = null;
+var LabSlot = null;
+var LabGlass = null;
+
+	function startAnim(){
+		if (!inProgress){
+			document.getElementById("startBtn").value="Пауза";
+			document.getElementById("pauseBtn").disabled = false;
+			waveSize = document.getElementById("WaveSizeRange").value;
+			renderingWaveSize = Math.ceil(waveSize/20);
+			waveColor = ColorsArray[(waveSize - 420)/40];
+			maxWaveSize = Math.ceil(Math.sqrt(Math.pow(partition, 2) + Math.pow(CanvasHeight/2, 2)));
+			clearInterferScreen();		
+			inProgress = true;
+			NeedAnimation = document.getElementById("NeedAnimation").checked;
+			if (NeedAnimation){
+				play();
+			} else{			
+				build();
+				document.getElementById("startBtn").value="Запуск";
+				fastBuilds = true;
+				inProgress = false;	
+			}
+		}else{
+			cancelAnimationFrame(timerRAF);
+			document.getElementById("startBtn").value="Запуск";
+			fastBuilds = false;
+			inProgress = false;		
+		}		
+	}
+	
+	function preparation(){
+		MainCanvas = document.getElementById("WorkingField");
+		MainCanvasCtx = MainCanvas.getContext("2d");
+		CanvasWidth = MainCanvasCtx.canvas.width;
+		CanvasHeight = MainCanvasCtx.canvas.height;		
+		bufferCanvas = document.createElement("canvas");
+		bufferCanvasCtx = bufferCanvas.getContext("2d");
+		bufferCanvasCtx.canvas.width = CanvasWidth;
+		bufferCanvasCtx.canvas.height = CanvasHeight;
+		PartitionCanvas = document.getElementById("Screens");
+		PartitionCanvasCtx = PartitionCanvas.getContext("2d");
+		AxisCanvas = document.getElementById("Axis");
+		AxisCanvasCtx = AxisCanvas.getContext("2d");
+		InterferCanvas = document.getElementById("InterferScreen");
+		InterferCanvasCtx = InterferCanvas.getContext("2d");
+		makeScreen();
+		createAxis();
+		RangeChange();
+		MainCanvasCtx.fillStyle = backgroundColor;
+		MainCanvasCtx.fillRect(0, 0, CanvasWidth, CanvasHeight);
+	}
+	
+	function makeScreen(){
+		partition = Number(document.getElementById("Partition").value);
+		cracks = Number(document.getElementById("Cracks").value);
+		firstWaveStop = Math.ceil(Math.sqrt(Math.pow(partition, 2) + Math.pow(cracks, 2)));
+		secondWaveStop = Math.ceil(Math.sqrt(Math.pow(CanvasWidth - partition, 2) + Math.pow(CanvasHeight/2 + cracks, 2)));
+		PartitionCanvasCtx.clearRect(0, 0, CanvasWidth, CanvasHeight);
+		PartitionCanvasCtx.lineWidth = 3;
+		PartitionCanvasCtx.strokeStyle = screenColor;
+		//First Screen
+		PartitionCanvasCtx.beginPath();
+		PartitionCanvasCtx.moveTo(1, 0);
+		PartitionCanvasCtx.lineTo(1, CanvasHeight/2-2);		
+		PartitionCanvasCtx.stroke();
+		PartitionCanvasCtx.beginPath();
+		PartitionCanvasCtx.moveTo(1, CanvasHeight/2+2);
+		PartitionCanvasCtx.lineTo(1, CanvasHeight);		
+		PartitionCanvasCtx.stroke();
+		//Second Screen
+		PartitionCanvasCtx.beginPath();
+		PartitionCanvasCtx.moveTo(partition, 0);
+		PartitionCanvasCtx.lineTo(partition, CanvasHeight/2-Number(cracks)-2);		
+		PartitionCanvasCtx.stroke();
+		PartitionCanvasCtx.beginPath();
+		PartitionCanvasCtx.moveTo(partition, CanvasHeight/2-Number(cracks)+2);
+		PartitionCanvasCtx.lineTo(partition, CanvasHeight/2+Number(cracks)-2);	
+		
+		PartitionCanvasCtx.stroke();
+		PartitionCanvasCtx.beginPath();
+		PartitionCanvasCtx.moveTo(partition, CanvasHeight/2+Number(cracks)+2);
+		PartitionCanvasCtx.lineTo(partition, CanvasHeight);		
+		PartitionCanvasCtx.stroke();
+		//Third Screen
+		PartitionCanvasCtx.beginPath();
+		PartitionCanvasCtx.moveTo(799, 0);
+		PartitionCanvasCtx.lineTo(799, CanvasHeight);		
+		PartitionCanvasCtx.stroke();
+	}
+	
+	function createAxis(){
+		//Grid
+		AxisCanvasCtx.beginPath();
+		AxisCanvasCtx.strokeStyle = "#000";
+		AxisCanvasCtx.lineWidth = 1;
+		for (i = 0; i < 9; i++){
+			AxisCanvasCtx.moveTo(0, 50*i);
+			AxisCanvasCtx.lineTo(805, 50*i);
+		}
+		for (i = 0; i < 17; i++){
+			AxisCanvasCtx.moveTo(50*i, 0);
+			AxisCanvasCtx.lineTo(50*i, 405);
+		}
+		AxisCanvasCtx.stroke();			
+		//Axis signatures
+		AxisCanvasCtx.font = 'bold 16px "Tahoma"';
+		AxisCanvasCtx.fillStyle = "#606060";
+		//OY
+		for (i = 7; i >= 0; i--){
+			AxisCanvasCtx.fillText(i, 808, 406 - 50 * i);	
+		}	
+		//OX
+		for (i = 1; i <= 15; i++){
+			if (i < 10){
+				AxisCanvasCtx.fillText(i, 50 * i - 5, 420);	
+			}else{
+				AxisCanvasCtx.fillText(i, 50 * i - 10, 420);
+			}			
+		}
+		AxisCanvasCtx.beginPath();
+		for (i = 0; i < 9; i++){
+			AxisCanvasCtx.moveTo(822, 50*i);
+			AxisCanvasCtx.lineTo(830, 50*i);
+		}		
+		AxisCanvasCtx.stroke();	
+		clearInterferScreen();
+	}		
+	
+	function cleanArea(){
+		cancelAnimationFrame(timerRAF);
+		MainCanvasCtx.fillStyle = backgroundColor;
+		MainCanvasCtx.fillRect(0, 0, CanvasWidth, CanvasHeight);
+		clearInterferScreen();
+		InterferDone = false;
+		waveArray = [];
+		twoWaveArray = [];
+		document.getElementById("startBtn").value="Запуск";
+		inProgress = false;
+	}
+
+	function clearInterferScreen(){
+		InterferCanvasCtx.fillStyle = screenBackground;
+		InterferCanvasCtx.fillRect(0, 0, 50, 400);
+	}
+	function RangeChange(){
+		waveSize = document.getElementById("WaveSizeRange").value;
+		document.getElementById("WaveSize").innerHTML = waveSize + " нм";
+		ScreenDist = document.getElementById("Partition").value
+		document.getElementById("ScrDist").innerHTML = (16 - ScreenDist/50) + " мк";
+		ScreenHole = document.getElementById("Cracks").value
+		document.getElementById("ScrHoles").innerHTML = (ScreenHole / 25) + " мк";
+		cleanArea();
+		makeScreen();
+		if (fastBuilds) startAnim();
+	}
+	
+	function clearBufferContext(){	
+		bufferCanvasCtx.fillStyle = backgroundColor;
+		bufferCanvasCtx.fillRect(0, 0, CanvasWidth, CanvasHeight);		
+	}
+	
+	function play(){
+		anim();
+		timerRAF = requestAnimationFrame(play);
+	}
+	
+	function anim(){			
+		MainCanvasCtx.save();
+		clearBufferContext();	
+		
+		bufferCanvasCtx.strokeStyle = waveColor;
+		bufferCanvasCtx.lineWidth = waveWidth;
+		
+		//Neon
+		bufferCanvasCtx.shadowColor = waveColor;
+		bufferCanvasCtx.shadowOffsetX = 0;
+		bufferCanvasCtx.shadowOffsetY = 0;
+		bufferCanvasCtx.shadowBlur = waveNeon;
+		//Waves
+		if (waveArray.length == 0) waveArray[waveArray.length] = 0;
+		for (var i = 0; i < waveArray.length; i++){
+			bufferCanvasCtx.beginPath();
+			bufferCanvasCtx.arc(0, 200, waveArray[i], -Math.PI/4, Math.PI/4, false);				
+			bufferCanvasCtx.stroke();
+			for (var j = 0; j < waveSpeed; j++){
+				if (waveArray[i] == renderingWaveSize) waveArray[waveArray.length] = 0;
+				if (waveArray[i] == maxWaveSize + 30) waveArray.splice(0,1);
+				if (waveArray[i] == firstWaveStop) twoWaveArray[twoWaveArray.length] = 0;	
+				waveArray[i]++;
+			}
+		}
+		
+		bufferCanvasCtx.shadowBlur = 0;
+		bufferCanvasCtx.fillStyle = backgroundColor;
+		bufferCanvasCtx.fillRect(partition, 0, CanvasWidth, CanvasHeight);
+		
+		bufferCanvasCtx.shadowBlur = waveNeon;
+		for (var i = 0; i < twoWaveArray.length; i++){
+			bufferCanvasCtx.beginPath();
+			bufferCanvasCtx.arc(partition, CanvasHeight/2-Number(cracks), twoWaveArray[i], -Math.PI/4, Math.PI/4, false);				
+			bufferCanvasCtx.stroke();
+			bufferCanvasCtx.beginPath();
+			bufferCanvasCtx.arc(partition, CanvasHeight/2+Number(cracks), twoWaveArray[i], -Math.PI/4, Math.PI/4, false);				
+			bufferCanvasCtx.stroke();	
+			for (var j = 0; j < waveSpeed; j++){
+				twoWaveArray[i]++;
+				if (twoWaveArray[i] > secondWaveStop + 50) twoWaveArray.splice(0,1);	
+				if ((twoWaveArray[i] == CanvasWidth - partition + 5) && (InterferDone == false)) {
+					InterferDone = true;
+					Interfer();
+				}			
+			}
+		}
+		MainCanvasCtx.drawImage(bufferCanvas, 0, 0, CanvasWidth, CanvasHeight);
+		MainCanvasCtx.restore();
+	}
+	
+	function build(){			
+		MainCanvasCtx.save();
+		clearBufferContext();	
+		
+		bufferCanvasCtx.strokeStyle = waveColor;
+		bufferCanvasCtx.lineWidth = waveWidth;
+		
+		//Neon
+		bufferCanvasCtx.shadowColor = waveColor;
+		bufferCanvasCtx.shadowOffsetX = 0;
+		bufferCanvasCtx.shadowOffsetY = 0;
+		bufferCanvasCtx.shadowBlur = waveNeon;
+		//Waves
+		for (var i = 0; i * renderingWaveSize < maxWaveSize + 50; i++){
+			bufferCanvasCtx.beginPath();
+			bufferCanvasCtx.arc(0, 200, i*renderingWaveSize, -Math.PI/4, Math.PI/4, false);				
+			bufferCanvasCtx.stroke();
+		}
+		bufferCanvasCtx.shadowBlur = 0;
+		bufferCanvasCtx.fillStyle = backgroundColor;
+		bufferCanvasCtx.fillRect(partition, 0, CanvasWidth, CanvasHeight);
+		bufferCanvasCtx.shadowBlur = waveNeon;
+		var AfterScreenStart = renderingWaveSize - (firstWaveStop - Math.floor(firstWaveStop / renderingWaveSize) * renderingWaveSize);
+		for (var i = 0; i * renderingWaveSize < secondWaveStop + 50; i++){
+			bufferCanvasCtx.beginPath();
+			bufferCanvasCtx.arc(partition, CanvasHeight/2-Number(cracks), AfterScreenStart + i*renderingWaveSize, -Math.PI/4, Math.PI/4, false);				
+			bufferCanvasCtx.stroke();
+			bufferCanvasCtx.beginPath();
+			bufferCanvasCtx.arc(partition, CanvasHeight/2+Number(cracks), AfterScreenStart + i*renderingWaveSize, -Math.PI/4, Math.PI/4, false);				
+			bufferCanvasCtx.stroke();	
+		}
+		
+		MainCanvasCtx.drawImage(bufferCanvas, 0, 0, CanvasWidth, CanvasHeight);
+		MainCanvasCtx.restore();
+		Interfer();
+	}
+	
+	function Interfer(){
+		var R, G, B;
+		R = parseInt(waveColor.substr(1, 2),16);
+		G = parseInt(waveColor.substr(3, 2),16);
+		B = parseInt(waveColor.substr(5, 2),16);		
+			
+		var SD = (16 - ScreenDist/50) * 1000;
+		var SH = (ScreenHole / 25) * 1000;
+		var res;
+		res = waveSize * SD / SH /40;			
+		
+		InterferCanvasCtx.lineWidth = 10;		
+		var Amp = Math.floor(res);		
+		var i = 0;
+		while (800 - ScreenDist - ScreenHole + 10 >= 2 * i * Amp && 2 * i * Amp <= CanvasHeight / 2 + 50){	
+			makeOneLane(R, G, B, CanvasHeight/2 - 2*i*Amp, Amp);
+			makeOneLane(R, G, B, CanvasHeight/2 + 2*i*Amp, Amp);
+			i++;
+		}
+	}
+	
+	function makeOneLane(R, G, B, Center, Amp){
+		for (var i = 0; i < Amp; i++){
+			var color = myGradient(R, G, B, Amp, i);
+			InterferCanvasCtx.strokeStyle = color;
+			InterferCanvasCtx.beginPath();
+			InterferCanvasCtx.moveTo(0, Center - i);
+			InterferCanvasCtx.lineTo(50, Center - i);
+			InterferCanvasCtx.moveTo(0, Center + i);
+			InterferCanvasCtx.lineTo(50, Center + i);	
+			InterferCanvasCtx.stroke();	
+		}
+	}
+	
+	function myGradient(R, G, B, Heignt, Dist){
+		//var MyCos = Math.pow((Math.cos(Dist / Heignt * Math.PI / 2)), 2);
+		R = Math.floor(R / Heignt * (Heignt - Dist));
+		G = Math.floor(G / Heignt * (Heignt - Dist));
+		B = Math.floor(B / Heignt * (Heignt - Dist));
+		var ResR, ResG, ResB;
+		if (R < 16) { ResR = "0"+R.toString(16); }
+		else{ ResR = R.toString(16); }
+		if (G < 16) { ResG = "0"+G.toString(16); }
+		else{ ResG = G.toString(16); }
+		if (B < 16) { ResB = "0"+B.toString(16); }
+		else{ ResB = B.toString(16); }
+		color = "#" + ResR + ResG + ResB;
+		return color;
+	}
+	
+	function switchMode(){
+		if (Mode == "Demo"){
+			Mode = "Lab";
+			document.getElementById("Demo").style.display = "none";
+			document.getElementById("Lab").style.display = "block";			
+			document.getElementById("ModeSwitcher").innerHTML = "Лаборатория";
+			cleanArea();
+			createLabAxis();
+		}else{
+			Mode = "Demo";
+			document.getElementById("Demo").style.display = "block";
+			document.getElementById("Lab").style.display = "none";
+			document.getElementById("ModeSwitcher").innerHTML = "Демонстрация";
+		}
+	}
+	
+	function createLabAxis(){
+		LabMainCanvas = document.getElementById("LabShield");
+		LabMainCanvasCtx = LabMainCanvas.getContext("2d");
+		LabCanvasWidth = LabMainCanvasCtx.canvas.width;
+		LabAxisCanvas = document.getElementById("LabAxis");
+		LabAxisCanvasCtx = LabAxisCanvas.getContext("2d");
+		
+		LabAxisCanvasCtx.font = 'bold 16px "Tahoma"';
+		LabAxisCanvasCtx.fillStyle = "#606060";
+		
+		var middle = LabCanvasWidth/2;
+		var marks = 50;
+		
+		LabAxisCanvasCtx.beginPath();
+		LabAxisCanvasCtx.strokeStyle = "#000";
+		LabAxisCanvasCtx.lineWidth = 1;
+		for (i = 0; i <= middle/marks; i++){
+			LabAxisCanvasCtx.moveTo(middle + i*marks, 120);
+			LabAxisCanvasCtx.lineTo(middle + i*marks, 130);	
+			LabAxisCanvasCtx.moveTo(middle - i*marks, 120);
+			LabAxisCanvasCtx.lineTo(middle - i*marks, 130);
+			if (i < middle/marks){
+				LabAxisCanvasCtx.fillText(i, middle + i*marks - 5, 145);	
+				if (i != 0) LabAxisCanvasCtx.fillText(-i, middle - i*marks - 12, 145);	
+			}
+			for (j = 0; j < 10; j++){
+				var hatch;
+				if (j % 5 == 0) hatch = 6;
+				else hatch = 4;
+				LabAxisCanvasCtx.moveTo(middle + i*marks + j*marks/10, 120);
+				LabAxisCanvasCtx.lineTo(middle + i*marks + j*marks/10, 120 + hatch);	
+				LabAxisCanvasCtx.moveTo(middle - i*marks - j*marks/10, 120);
+				LabAxisCanvasCtx.lineTo(middle - i*marks - j*marks/10, 120 + hatch);	
+			}
+		}
+		LabAxisCanvasCtx.strokeRect(0, 0, LabCanvasWidth, 160);
+		LabAxisCanvasCtx.stroke();	
+
+		makeLabШnterference();
+	}
+	
+	function makeLabШnterference(){	
+		cleanLabArea();	
+		LabWave = document.getElementById("LabWave").value;		
+		waveColor = ColorsArray[(LabWave - 420)/40];
+		
+		document.getElementById("LabWaveSizeSpan").innerHTML = LabWave + " нм";
+		LabDist = document.getElementById("LabDist").value;
+		document.getElementById("LabScrDistSpan").innerHTML = LabDist + " м";
+		LabSlot = document.getElementById("LabSlot").value;
+		document.getElementById("LabScrHolesSpan").innerHTML = LabSlot + " мк";
+		LabGlass = document.getElementById("LabGlass").value;
+		document.getElementById("LabGlassSpan").innerHTML = LabGlass + " нм";
+		
+		var R, G, B;
+		R = parseInt(waveColor.substr(1, 2),16);
+		G = parseInt(waveColor.substr(3, 2),16);
+		B = parseInt(waveColor.substr(5, 2),16);	
+		
+		var x = LabWave * LabDist / LabSlot; // мм	
+		var xInPixels = Math.floor(x * 2.5);
+		var n = 1.52; // Преломление стекла
+		var shift = Math.floor(LabGlass * LabDist * (n - 1) / LabSlot * 5);
+		
+		LabMainCanvasCtx.strokeStyle = waveColor;
+		LabMainCanvasCtx.lineWidth = 10;		
+		var h = Math.floor(xInPixels);		
+		var i = 0;
+		while (450 >= i*h){			
+			LabOneLane(R, G, B, 450 - shift - 2*i*h, h);
+			LabOneLane(R, G, B, 450 - shift + 2*i*h, h);
+			i++;
+		}
+		
+	}
+	
+	function LabOneLane(R, G, B, Center, h){
+		for (var i = 0; i < h; i++){
+			var color = myGradient(R, G, B, h, i);
+			LabMainCanvasCtx.strokeStyle = color;
+			LabMainCanvasCtx.beginPath();
+			LabMainCanvasCtx.moveTo(Center + i, 0);
+			LabMainCanvasCtx.lineTo(Center + i, 120);
+			LabMainCanvasCtx.moveTo(Center - i, 0);
+			LabMainCanvasCtx.lineTo(Center - i, 120);	
+			LabMainCanvasCtx.stroke();	
+		}
+	}
+	
+	function cleanLabArea(){
+		LabMainCanvasCtx.fillStyle = screenBackground;
+		LabMainCanvasCtx.fillRect(0, 0, LabCanvasWidth, 400);
+	}
+	
+</script>
+<body onload = "preparation()">
+	<div id = "wrapper">	
+		<h1 id = "maintitle">Опыт Юнга (<span id = "ModeSwitcher" onclick = "switchMode()">Демонстрация</span>)</h1>
+		<div id = "Demo">
+			<div id="canvasArea">
+				<canvas id='Axis' class="myCanvas" width="900" height="430">Обновите браузер</canvas>
+				<canvas id='WorkingField' class="myCanvas" width="800" height="400">Обновите браузер</canvas>
+				<canvas id='Screens' class="myCanvas" width="800" height="400">Обновите браузер</canvas>
+				<canvas id='InterferScreen' class="myCanvas" width="50" height="400">Обновите браузер</canvas>
+			</div>
+			<div id="info">
+				<div id="myButtons">
+					<table>
+						<tr>
+							<td>
+								<input type="button" value="Запуск" onclick="startAnim()" id="startBtn" class="sspBtn" autofocus>
+							</td>
+							<td>
+								 <input type="button" value="Очистить" onclick="cleanArea()" id="pauseBtn" class="sspBtn">
+							</td>
+						</tr>
+						<tr>
+							<td>
+								Анимация: <input type="checkbox" checked="checked" id="NeedAnimation"/>
+							</td>
+						</tr>
+					</table>				
+				</div>
+				<table id="settings1"  class="settingTable">
+					<tr>
+						<td>Длина волны:</td>
+						<td>
+							<input type="range" min="420" max="660" id="WaveSizeRange" class="myRange" step="40" onchange="RangeChange()" oninput="RangeChange()">
+						</td>
+						<td>
+							<span id="WaveSize"></span>
+						</td>
+					</tr>				
+					<tr>
+						<td>Расстояние до экрана:</td>
+						
+						<td>
+							<input type="range" min="200" max="600" id="Partition" class="myRange" step="50" onchange="RangeChange()" oninput="RangeChange()">
+						</td>
+						<td>
+							<span id="ScrDist"></span>
+						</td>
+					</tr>
+					<tr>
+						<td>Расстояние между отверстиями:</td>
+						<td>
+							<input type="range" min="40" max="100" id="Cracks" class="myRange" step="10" onchange="RangeChange()" oninput="RangeChange()">
+						</td>
+						<td>
+							<span id="ScrHoles"></span>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<div style="clear:both"></div>
+		</div>
+		<div id = "Lab">
+			<div id="LabCanvasArea">
+				<canvas id='LabAxis' class="labCanvas" width="900" height="160">Обновите браузер</canvas>
+				<canvas id='LabShield' class="labCanvas" width="900" height="120">Обновите браузер</canvas>
+			</div>
+			<div id="LabInfo">
+				<table id="settings2" class="settingTable">
+					<tr>
+						<td>Длина волны: </td>
+						<td>
+							<input type="range" min="420" max="660" id="LabWave" class="myRange" step="40" onchange="makeLabШnterference()" oninput="makeLabШnterference()">
+						</td>
+						<td>
+							<span id="LabWaveSizeSpan"></span>
+						</td>
+					</tr>				
+					<tr>
+						<td>Расстояние до экрана: </td>
+						<td>
+							<input type="range" min="0.2" max="1.0" id="LabDist" class="myRange" step="0.1" onchange="makeLabШnterference()" oninput="makeLabШnterference()">
+						</td>
+						<td>
+							<span id="LabScrDistSpan"></span>
+						</td>
+					</tr>
+					<tr>
+						<td>Расстояние между отверстиями: </td>
+						<td>
+							<input type="range" min="10" max="20" id="LabSlot" class="myRange" step="1" onchange="makeLabШnterference()" oninput="makeLabШnterference()">
+						</td>
+						<td>
+							<span id="LabScrHolesSpan"></span>
+						</td>
+					</tr>
+					<tr>
+						<td>Толщина стекла на левом отверстии: </td>
+						<td>
+							<input type="range" min="0" max="500" id="LabGlass" value="0" class="myRange" step="10" onchange="makeLabШnterference()" oninput="makeLabШnterference()">
+						</td>
+						<td>
+							<span id="LabGlassSpan"></span>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<head>
+    <title>Второй закон Ньютона</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<script>
+function makemove(){
+	it = 0;
+	btn = document.getElementById("start_btn");
+	document.getElementById("result").innerHTML = '';
+	document.getElementById("result2").innerHTML = '';
+	if (btn.innerHTML == "Запуск"){
+		res = document.getElementById("result");
+		res2 = "";
+		t = 0;
+		m1 = document.getElementById("m1").value/1000;
+		m2 = document.getElementById("m2").value/1000;
+		b1 = document.getElementById("b1").value/1000;
+		k1 = parseInt(document.getElementById("k1").value * 1000)/ 1000;
+		p1 = document.getElementById("p1").checked;
+		btn.innerHTML="Сброс";
+		move();
+	}else{
+		btn.innerHTML="Запуск";
+		stop();
+	}	
+}
+function stop(){
+	document.getElementById("m1").disabled = false;
+	document.getElementById("m2").disabled = false;
+	document.getElementById("k1").disabled = false;
+	document.getElementById("b1").disabled = false;
+	clearTimeout(time);
+	block1.style.left = 1 + 'px';
+	rope1.style.left = 80 + 'px';
+	block2.style.top = 6 + 'px';
+	rope2.style.height = 16 + 'px';
+	rope1.style.width = 575 + 'px';
+	document.getElementById("s1").value = '';
+	document.getElementById("s2").value = '';
+}
+function move(){	
+	document.getElementById("m1").disabled = true;
+	document.getElementById("m2").disabled = true;
+	document.getElementById("k1").disabled = true;
+	document.getElementById("b1").disabled = true;
+	if (m1 > 1) { m1 = 1; document.getElementById("m1").value = 1000;}
+	if (m1 <= 0) { m1 = 0.001; document.getElementById("m1").value = 1;}
+	if (m2 > 1) { m2 = 1; document.getElementById("m2").value = 1000;}
+	if (m2 <= 0) { m2 = 0.001; document.getElementById("m2").value = 1;}
+	if (b1 > 1) { b1 = 1; document.getElementById("b1").value = 1000;}
+	if (b1 < 0) { b1 = 0; document.getElementById("b1").value = 1;}
+	if (k1 > 1) { k1 = 1; document.getElementById("k1").value = 1;}
+	if (k1 < 0) { k1 = 0; document.getElementById("k1").value = 0;}
+	var a;
+	var g = 9.80665;
+	if (p1 == 1) { a = ((m2 - k1 * m1) * g) / (m1 + m2 + b1)}
+	else{ a = (2 * (m2 - k1 * m1) * g) / (2 * m1 + 2 * m2 + b1) }
+	
+	if (a >= 0){
+		it++;
+		var pos = (a * (it * it) / 2) / 100;
+		var s1 = document.getElementById("s1");
+		var s2 = document.getElementById("s2");
+		if (pos <= 400) t = it;
+		if (Math.floor((it % 100) / 10) == 0){
+			if (pos <= 100) s1.value = Math.floor((it) / 100) + ':0' + (it) % 100;
+			if (pos <= 400) s2.value = Math.floor((it) / 100) + ':0' + (it) % 100;
+		}else{
+			if (pos <= 100) s1.value = Math.floor((it) / 100) + ':' + (it) % 100;
+			if (pos <= 400) s2.value = Math.floor((it) / 100) + ':' + (it) % 100;
+		}
+		
+		var block1 = document.getElementById("block1");
+		var rope1 = document.getElementById("rope1");
+		var block2 = document.getElementById("block2");
+		block1.style.left = 1 + pos + 'px';
+		rope1.style.left = 80 + pos + 'px';
+		rope1.style.width = (575 - pos) + 'px';
+		if (pos < 250 ) { 
+			block2.style.top = 6 + pos + 'px';
+			rope2.style.height = 16 + pos + 'px';
+		}
+		if (pos < 558)
+			time = setTimeout("move()", 10);
+		else{
+			res2 = "T<sub>1</sub> = m<sub>1</sub>a + F<sub>тр</sub> = m<sub>1</sub>a + μm<sub>1</sub>g; <span style='padding-right: 50px;'></span> T<sub>2</sub> = m<sub>2</sub>g - m<sub>2</sub>a; <br>";
+			if (b1 != 0){
+				res2 += "<span style='text-decoration: overline;'>M</span> = I<span style='text-decoration: overline;'>ε</span> <span style='padding-right: 75px;'></span>"
+				if (p1 == 1) res2 += "I = mr<sup>2</sup><br>(T<sub>2</sub> - T<sub>1</sub>)r = mr<sup>2</sup> * a/r <br> a = (m<sub>2</sub> g - μm<sub>1</sub> g) / (m + m<sub>1</sub> + m<sub>2</sub>) = ";
+				else res2 += "</span> I = mr<sup>2</sup>/2<br>(T<sub>2</sub> - T<sub>1</sub>)r = mr<sup>2</sup>/2 * a/r <br>a = (2m<sub>2</sub> g - 2μm<sub>1</sub> g) / (m + 2m<sub>1</sub> + 2m<sub>2</sub>) = ";
+			}else{
+				if (k1 != 0) res2 += "a = (m<sub>2</sub> g - μm<sub>1</sub> g) / (m<sub>1</sub> + m<sub>2</sub>) = ";
+				else res2 += "a = m<sub>2</sub> g / (m<sub>1</sub> + m<sub>2</sub>) = ";
+			}	
+			document.getElementById("result2").innerHTML = res2 + Math.round(a * 100) / 100 + "м/c<sup>2</sup>";
+			it = 0;
+			pos = 558;
+			block1.style.left = 1 + pos + 'px';
+			rope1.style.left = 80 + pos + 'px';
+			rope1.style.width = (575 - pos) + 'px';
+			btn.innerHTML="Запуск";
+			document.getElementById("m1").disabled = false;
+			document.getElementById("m2").disabled = false;
+			document.getElementById("k1").disabled = false;
+			document.getElementById("b1").disabled = false;
+			clearTimeout(time);
+			res.innerHTML = "a = 2S / t<sup>2</sup> = 2*4 / " + t/100 + "<sup>2</sup> = " + Math.round(800 / (t / 100) / (t / 100)) / 100 + "м/c<sup>2</sup>";
+		}
+	}
+}
+function makerand(){
+	document.getElementById("m1").value = 100 + Math.floor(Math.random() * (50))* 10;
+	document.getElementById("m2").value = 100 + Math.floor(Math.random() * (50)) * 10;
+	document.getElementById("b1").value = 0;
+	document.getElementById("k1").value = Math.floor(Math.random() * (50)) / 100;
+}
+</script>
+<style>
+body {
+	margin: 10px;
+}
+h3{
+	margin: 14px auto;
+	font-size: 20px;
+}
+#main_panel{
+	height: 580px;
+    width: 1000px;
+    margin: 0px auto;
+    background: #f1f1f1;
+	border: 2px solid #808080;
+	border-radius: 5px;
+	padding: 10px;
+	text-align: center;
+	box-sizing: border-box;
+}
+#header{
+	height: 54px;
+    width: 100%;
+	font-size: 32px;
+	font-weight: bold;
+}
+#data{
+	height: 500px;
+    width: 200px;
+    background: #e8e8e8;
+    float: left;
+    border: 2px solid #808080;
+    border-radius: 5px;
+}
+.input1{
+	height: 32px;
+	width: 120px;
+	border: 3px solid #808080;
+	border-radius: 5px;
+	text-align: center;
+	outline: none;
+	font-size: 20px;
+	font-weight: bold;
+	box-sizing:  border-box;
+}
+#panelonpanel{
+	border: 2px solid #808080;
+    border-radius: 5px;
+    width: 180px;
+    margin-top: 8px;
+    margin-left: 10px;
+    padding-bottom: 10px;
+    box-sizing: border-box;
+}
+.checkbox1{
+	width: 20px;
+	height: 20px;
+	position: absolute;
+	left: 140px;
+	outline: none;
+	cursor: pointer;
+}
+#start_btn{
+	width: 120px;
+    height: 32px;
+	outline: none;
+    border: 3px solid #808080;
+    border-radius: 5px;
+	font-size: 20px;
+	font-weight: bold;
+	box-sizing:  border-box;
+	cursor: pointer;
+}
+#start_btn:hover{
+	color: #eaeaea;
+    border-color: #7d7d7d;
+    background: #484848;
+}
+#display{
+	float: right;
+	background: #ffffff;
+	width: 750px;
+	height: 500px;
+	border: 2px solid #808080;
+    border-radius: 5px;
+}
+#lvl1{
+	height: 60px;
+	width: 750px;
+}
+#lvl2{
+	height: 40px;
+	width: 750px;
+	position: relative;
+}
+#lvl2pt1{
+	height: 100%;
+	width: 115px;
+	float: left;
+    box-sizing: border-box;
+}
+#lvl2pt2{
+	border: 3px solid #808080;
+	border-radius: 5px;
+	height: 100%;
+	width: 120px;
+	float: left;
+    box-sizing: border-box;
+}
+#lvl2pt3{
+	height: 100%;
+	width: 180px;
+	float: left;
+    box-sizing: border-box;
+}
+#lvl2pt4{
+	border: 3px solid #808080;
+	border-radius: 5px;
+	height: 100%;
+	width: 120px;
+    float: left;
+    box-sizing: border-box;
+}
+.input2{
+	width: 100%;
+	height: 100%;
+	outline: none;
+	font-size: 32px;
+	text-align: center;
+	box-sizing: border-box;
+	vertical-align: middle;
+}
+#lvl3{
+	height: 50px;
+	width: 750px;
+	position: relative;
+}
+#lvl3pt1{
+	border-right: 8px solid #808080;
+	height: 100%;
+	width: 181px;
+	float: left;
+    box-sizing: border-box;
+}
+#lvl3pt2{
+	border-right: 8px solid #808080;
+	height: 100%;
+	width: 300px;
+	float: left;
+    box-sizing: border-box;
+}
+#lvl3pt3{
+	height: 100%;
+	width: 150px;
+	float: left;
+    box-sizing: border-box;
+}
+#lvl3pt4{
+    border: 5px solid #808080;
+	border-top: 5px solid #505050;
+	border-right: 5px solid #505050;
+    border-radius: 20px;
+    height: 30px;
+    width: 30px;
+    float: left;
+    top: 25px;
+    left: 640px;
+    position: absolute;
+    box-sizing: border-box;
+}
+#block1{
+	width: 80px;
+	height: 40px;
+	top: 9px;
+	left: 1px;
+	background: #ffffff;
+	box-sizing: border-box;
+	border: 3px solid #505050;
+	border-radius: 5px;
+	position: absolute;
+	z-index: 300;
+}
+#rope1{
+    width: 575px;
+    height: 0px;
+    top: 25px;
+    left: 80px;
+    border: 2px solid #505050;
+    position: absolute;
+	z-index: 200;
+}
+#lvl4{
+	border-top: 5px solid #808080;
+	border-right: 5px solid #808080;
+	background: #b3b3b3;
+	background: repeating-linear-gradient(135deg, #ffffff, #ffffff 25px, #939393 25px, #acacac 30px);
+	height: 220px;
+	width: 650px;
+	position: relative;
+	box-sizing: border-box;
+	float: left;
+}
+#lvl4pt1{
+	height: 200px;
+    width: 630px;
+    top: 15px;
+	border-radius: 5px;
+    background: #ffffff;
+    position: relative;
+	text-align: left;
+	font-size: 22px;
+	font-weight: bold;
+	padding: 10px;
+	padding-top: 16px;
+	line-height: 1.4;
+	box-sizing: border-box;
+}
+#lvl5{
+	height: 220px;
+    width: 100px;
+    float: right;
+	position: relative;
+}
+#block2{
+	width: 40px;
+    height: 80px;
+    top: 6px;
+    left: 1px;
+    background: #ffffff;
+    box-sizing: border-box;
+    border: 3px solid #505050;
+    border-radius: 5px;
+    position: absolute;
+	z-index: 250;
+}
+#rope2{
+    width: 0px;
+    height: 16px;
+    top: -12px;
+    left: 16px;
+    border: 2px solid #505050;
+    position: absolute;
+    z-index: 200;
+}
+#lvl6{
+	height: 130px;
+    width: 750px;
+	border-top: 3px solid #808080;
+	box-sizing: border-box;
+	background: #ffffff;
+	position: absolute;
+	z-index: 300;
+	font-size: 22px;
+	font-weight: bold;
+	text-align: left;
+	padding: 6px 10px;
+	border-radius: 0px 0px 5px 5px;
+}
+</style>
+<body onload="makerand()">
+<div id="wrapper">
+	<div id="main_panel">
+		<div id="header">	
+			Второй закон Ньютона
+		</div>
+		<div id="data">
+			<div id="panelonpanel">
+				<h3>Масса тележки</h3>
+				<input type="input" id = "m1" class="input1" placeholder="0"></input>
+				<h3>Масса грузика</h3> 
+				<input type="input" id = "m2" class="input1" placeholder="0"></input>
+			</div>
+			<div id="panelonpanel">
+				<h3>Масса блока</h3>
+				<input type="input" id = "b1" class="input1" placeholder="0"></input>
+				<br><b style="font-size: 18px; padding-top: 10px; display: block; position: relative; left: -12px;">Блок полый  
+				<input type="checkbox" class="checkbox1" id = "p1"></input></b> 
+			</div>
+			<div id="panelonpanel">
+				<h3>Коэф. трения</h3>
+				<input type="input" id = "k1" class="input1" placeholder="0"></input>
+			</div>
+			<br><button id="start_btn" onclick="makemove()">Запуск</button>
+		</div>
+		<div id="display">
+			<div id="lvl1">	
+			</div>
+			<div id="lvl2">	
+				<div id="lvl2pt1"></div>
+				<div id="lvl2pt2"><input type="input" id = "s1" class="input2" disabled placeholder="0:00"></input></div>
+				<div id="lvl2pt3"></div>
+				<div id="lvl2pt4"><input type="input" id = "s2" class="input2" disabled placeholder="0:00"></input></div>
+			</div>
+			<div id="lvl3">	
+				<div id="lvl3pt1"></div>
+				<div id="lvl3pt2"></div>
+				<div id="lvl3pt3"></div>
+				<div id="lvl3pt4"></div>
+				<div id="block1"></div>
+				<div id="rope1"></div>
+			</div>
+			<div id="lvl4">
+				<div id="lvl4pt1">
+					Расчет по исходным данным:<br>
+					<span id="result2" style = "font-family: Cambria Math; font-size: 20px;">
+					
+						
+					</span>
+				</div>
+			</div>
+			<div id="lvl5">
+				<div id="rope2"></div>
+				<div id="block2"></div>
+			</div>
+			<div style="clear:both;"></div>
+			<div id="lvl6">
+				Расчет по результатам эксперимента:<br>
+				<span style="font-size: 20px; font-weight: normal;">Расстояние между тележкой и первым таймером: 1 м<br>
+				Расстояние между таймерами: 3 м<br></span>
+				<span id="result" style = "font-family: Cambria Math;"></span> 
+			</div>
+
+		</div>
+	</div>
+</div>
+</body>
+</html>
